@@ -164,7 +164,6 @@ class LogstashFormatter(logging.Formatter):
             'line': record.lineno,
             'logger_name': record.name,
             'logstash_async_version': logstash_async.__version__,
-            'path': record.pathname,
             'process_name': record.processName,
             'thread_name': record.threadName,
         }
