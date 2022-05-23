@@ -18,7 +18,7 @@ DATABASE_SCHEMA_STATEMENTS = [
     `event_id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     `event_text`        TEXT NOT NULL,
     `pending_delete`    INTEGER NOT NULL,
-    `entry_date`        TEXT NOT NULL);
+    `entry_date`        DATETIME NOT NULL);
     ''',
     '''CREATE INDEX IF NOT EXISTS `idx_pending_delete` ON `event` (pending_delete);''',
     '''CREATE INDEX IF NOT EXISTS `idx_entry_date` ON `event` (entry_date);''',
@@ -26,6 +26,10 @@ DATABASE_SCHEMA_STATEMENTS = [
 
 
 class DatabaseLockedError(Exception):
+    pass
+
+
+class DatabaseDiskIOError(Exception):
     pass
 
 
@@ -47,8 +51,8 @@ class DatabaseCache(Cache):
 
     @contextmanager
     def _connect(self):
-        self._open()
         try:
+            self._open()
             with self._connection as connection:
                 yield connection
         except sqlite3.OperationalError:
@@ -96,6 +100,12 @@ class DatabaseCache(Cache):
         _, exc, _ = sys.exc_info()
         if str(exc) == 'database is locked':
             raise DatabaseLockedError from exc
+        if str(exc) == 'disk I/O error':
+            raise DatabaseDiskIOError from exc
+        if str(exc) == "unable to open database file":
+            raise DatabaseDiskIOError from exc
+        if str(exc) == "attempt to write a readonly database":
+            raise DatabaseDiskIOError from exc
 
     # ----------------------------------------------------------------------
     def get_queued_events(self):
